@@ -38,10 +38,10 @@ Complete the [dev environment pre-check](docs/00-prerequisites.md). The labs ass
 
 | Time | Module |
 |------|--------|
-| 09:00 - 09:45 | Module 1: Foundations and Ecosystem |
-| 09:45 - 11:15 | Module 2: Deep Dive, Building a Connector (incl. hands-on lab) |
-| 11:15 - 12:15 | Lunch |
-| 12:15 - 13:30 | Module 3: Best Practices and Code Quality (incl. mini lab) |
-| 13:30 - 14:30 | Module 4: Testing and Debugging |
-| 14:30 - 15:15 | Module 5: Contributing and Wrap-up |
-| 15:15 - 15:30 | Buffer / Q&A |
+| 10:00 - 10:40 | Module 1: Foundations and Ecosystem |
+| 10:40 - 12:30 | Module 2: Deep Dive, Building a Connector (incl. hands-on lab) |
+| 12:30 - 13:30 | Lunch |
+| 13:30 - 14:35 | Module 3: Best Practices and Code Quality |
+| 14:35 - 15:25 | Module 4: Testing and Debugging |
+| 15:25 - 15:55 | Module 5: Contributing and Wrap-up |
+| 15:55 - 16:00 | Buffer / Q&A |
