@@ -91,6 +91,9 @@ services:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
       - RABBITMQ_NODENAME=rabbit01@localhost
+    ports:
+      - 5672:5672
+      - 15672:15672
     volumes:
       - type: bind
         source: ./rabbitmq.conf

@@ -26,7 +26,7 @@ A one-day, hands-on workshop for building OpenCTI connectors. By the end, each a
 - [ ]  Git 2.x installed; GitHub access working; SSH keys configured (recommended)
 - [ ]  IDE/editor: VS Code or PyCharm (with Python + Docker extensions/plugins)
 - [ ]  Connector repository forked and cloned: https://github.com/OpenCTI-Platform/connectors
-- [ ]  Be able to clone workshop repository during workshop
+- [ ]  Be able to clone workshop repository
 - [ ]  Ports available for local services (e.g., 3000/4000/8080/5672) or ability to remap
 - [ ]  Access to lab instance for both Web UI and API access or OpenCTI running locally via Docker Compose (see [octi-lab](./octi-lab/README.md))
 
