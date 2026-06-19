@@ -21,7 +21,10 @@
         },
         "last_modification_date": 1749120456,
         "description": "Domain associated with a phishing campaign distributing credential-harvesting pages impersonating banking portals. Flagged as malicious by 23 vendors.",
-        "tags": ["malware", "phishing"]
+        "tags": [
+          "malware",
+          "phishing"
+        ]
       }
     },
     {
@@ -42,7 +45,9 @@
         },
         "last_modification_date": 1749001234,
         "description": "Low-reputation domain occasionally observed in spam relays. Minimal malicious detections; likely abused legitimate infrastructure.",
-        "tags": ["spam"]
+        "tags": [
+          "spam"
+        ]
       }
     },
     {
@@ -63,7 +68,11 @@
         },
         "last_modification_date": 1749150000,
         "description": "Command-and-control domain linked to a known botnet family. High malicious consensus across vendors; recently registered.",
-        "tags": ["c2", "botnet", "malware"]
+        "tags": [
+          "c2",
+          "botnet",
+          "malware"
+        ]
       }
     },
     {
