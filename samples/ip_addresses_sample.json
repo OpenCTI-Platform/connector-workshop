@@ -21,7 +21,10 @@
         },
         "last_modification_date": 1749120456,
         "description": "IPv4 address acting as a Tor exit node frequently observed in scanning and brute-force activity. Flagged as malicious by 26 vendors.",
-        "tags": ["tor", "scanner"]
+        "tags": [
+          "tor",
+          "scanner"
+        ]
       }
     },
     {
@@ -42,7 +45,11 @@
         },
         "last_modification_date": 1749150000,
         "description": "Command-and-control server hosting payloads for a known malware family. High malicious consensus across vendors.",
-        "tags": ["c2", "malware", "botnet"]
+        "tags": [
+          "c2",
+          "malware",
+          "botnet"
+        ]
       }
     },
     {
@@ -63,7 +70,9 @@
         },
         "last_modification_date": 1749001234,
         "description": "Shared hosting address with occasional abuse reports. Low malicious detections; likely abused legitimate infrastructure.",
-        "tags": ["spam"]
+        "tags": [
+          "spam"
+        ]
       }
     },
     {
