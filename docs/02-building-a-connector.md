@@ -89,6 +89,13 @@ Let's build a minimal working connector.
 
 Ensure you have completed the prerequisites and pre-check sign-off. You should have a working OpenCTI instance, an API token, and a cloned copy of this repo.
 
+You must be aligned with connectors master branch. If you have a fork, make sure it is up to date:
+
+```bash
+# Update your fork and then update local master branch
+git pull origin master
+```
+
 Create a new branch in your fork of the `connectors` repo. You will be committing your work there.
 
 ```bash
@@ -144,7 +151,6 @@ If your connector has hyphens in its name, the script will convert them to under
 
 Please check the config.yml file created to ensure everything is correct.
 
-
 ### Step 4: Install dependencies
 
 Go to your connector directory and install the dependencies in a virtual environment (using pip or uv):
@@ -195,7 +201,11 @@ uv run --active src/main.py
 
 You will have a bunch of errors in the logs, but the connector should be registered and appear in the platform.
 
+Let's check in the UI in Data > Ingestion > Monitoring.
+
 ### Step 7: Implement the connector logic
+
+- Copy paste the `sample` folder in which you will find samples of API responses to use for testing. You will find Domains, IPs, and Vulnerabilities samples. You can use them to test your connector without calling the API.
 
 ### Success criteria
 
