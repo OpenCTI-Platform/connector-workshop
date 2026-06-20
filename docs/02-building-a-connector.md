@@ -418,6 +418,23 @@ In docker-compose.yml:
 
 ![Connector settings with new attribute](../docs/media/connector-settings.png)
 
+- The tests in the template are already implemented to test the settings. You can run them and see that they do not pass.
+
+To run tests, you can use the following commands:
+
+```bash
+# Install tests requirements
+pip install -r tests/requirements.txt
+
+# or using uv
+uv pip install -r tests/test-requirements.txt
+
+# Run tests in the folder
+pytest -vv
+```
+
+We will update it in the module 4 to make them pass.
+
 ### Step 9: Implement the "client" to fetch data from the source
 
 - We will use our brand new settings attribute `sample_file_path` to read the samples from the `samples` folder.
