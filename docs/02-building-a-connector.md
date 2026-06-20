@@ -174,12 +174,14 @@ If you are using your own OpenCTI instance, you can create a new Token and paste
 
 If you are using the shared lab instance, on OpenCTI:
 
-- Go to Settings > Security > Users and create a new user for your connector and register in `Workshop-Group`.
+- Go to `Settings > Security > Users` and create a new user for your connector and register in `Workshop-Group`.
 
 ![Workshop group](../docs/media/workshop-group.png)
 
-- Log out and connect with the new user to generate a token in Profile > API Access.
+- Log out and connect with the new user to generate a token in `Profile > API Access`.
 - Copy the token and paste it in the `config.yml` file.
+
+If you are using the shared lab instance, you can also use the token provided for the prerequisites.
 
 ### Step 6: Register the connector in the platform
 
