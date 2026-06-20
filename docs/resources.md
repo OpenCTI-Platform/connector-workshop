@@ -12,6 +12,7 @@
 
 - Contribution guidelines: https://github.com/OpenCTI-Platform/connectors/blob/master/CONTRIBUTING.md
 - Connectors templates: https://github.com/OpenCTI-Platform/connectors/tree/master/templates
+- Autobackpressure and queue control: https://filigran.io/blog/auto-backpressue-control-octi-connectors/
 
 ## STIX 2.1
 

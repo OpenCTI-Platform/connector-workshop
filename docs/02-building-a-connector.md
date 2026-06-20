@@ -83,7 +83,8 @@ For enrichment, the callback receives the entity to enrich. You read it, fetch c
 
 ## Hands-on lab
 
-Let's build a minimal working connector.
+Let's build a minimal working connector together.
+We will implement without AI assistance to understand the full workflow and connector lifecycle. Of course, you can use AI to help you create new ones later, but you should understand the underlying concepts first.
 
 ### Before you start
 
@@ -203,9 +204,505 @@ You will have a bunch of errors in the logs, but the connector should be registe
 
 Let's check in the UI in Data > Ingestion > Monitoring.
 
-### Step 7: Implement the connector logic
+### Step 7: Implement the connector settings
 
 - Copy paste the `sample` folder in which you will find samples of API responses to use for testing. You will find Domains, IPs, and Vulnerabilities samples. You can use them to test your connector without calling the API.
+
+Once done, let's explore `settings.py`.
+
+<details>
+<summary> DETAILS ON SETTINGS </summary>
+
+This defines the configuration schema for an OpenCTI external import connector using the `connectors_sdk` and Pydantic.
+
+**`ExternalImportConnectorConfig`** extends the SDK's base class for `EXTERNAL_IMPORT` connectors. It overrides two fields:
+
+- `name` — the connector's display name, defaulting to `"WorkshopFeedConnectorConnector"`.
+- `duration_period` — a `timedelta` controlling how long the connector waits between runs, defaulting to 1 hour. Pydantic parses ISO 8601 duration strings (e.g. `PT2H`) into a `timedelta` here.
+
+**`WorkshopFeedConnectorConfig`** holds the settings specific to this connector's data source:
+
+- `api_base_url` — typed as `HttpUrl`, so Pydantic validates it is a well-formed URL.
+- `api_key` — the authentication secret (no default, so it is required).
+- `tlp_level` — restricted by `Literal` to the allowed Traffic Light Protocol values, defaulting to `"clear"`. This sets the marking applied to imported entities.
+
+**`ConnectorSettings`** is the top-level config object. It overrides the SDK's `BaseConnectorSettings` to wire in the two config classes above as nested sections:
+
+- `connector` → the generic connector behavior.
+- `workshop_feed_connector` → the feed-specific parameters.
+
+Both use `default_factory`, meaning Pydantic instantiates each sub-model automatically, pulling values from the environment (the SDK typically maps `WORKSHOP_FEED_CONNECTOR_API_KEY`, `CONNECTOR_NAME`, etc.). Fields without defaults (like `api_key` and `api_base_url`) must be supplied, or validation fails at startup.
+
+The overall pattern separates SDK-provided defaults from your connector's custom requirements, giving you type-checked, validated configuration loaded from environment variables.
+
+The attributes defined must be written similiarly in the `config.yml` file. If you add a new attribute in the settings, you must add it in the `config.yml` file. As well in the docker-compose.yml file to build the docker image properly.
+</details>
+</br>
+
+- Where is it instantiated? In `main.py` when the helper is created. The helper reads the config from the environment and validates it against this schema. You can add a debug breakpoint to inspect the object and see the values.
+
+### Step 8: Update settings
+
+- Let's change a configuration parameter in the `config.yml` file and see how it is reflected in the logs when we run the connector.
+- Remove `api_base_url` and `api_key` from the `config.yml` file and run the connector. You should see a validation error in the logs.
+- Remove from `settings.py` the `api_base_url` and `api_key` attributes and run the connector. You should see a validation error in the logs.
+
+Errors are clear and tell you exactly what is wrong.
+
+- Now remove it completely where it is used: `<template_client>/api_client.py`, `connector/connector.py`, and `docker-compose.yml`.
+
+<details>
+<summary> DETAILS ON `api_client.py` </summary>
+
+```python
+import requests
+from pycti import OpenCTIConnectorHelper
+from pydantic import HttpUrl
+
+
+class WorkshopFeedConnectorClient:
+    def __init__(self, helper: OpenCTIConnectorHelper):
+        # REMOVED PARAMETERS ==============================
+        """
+        Initialize the client with necessary configuration.
+        For log purpose, the connector's helper CAN be injected.
+        Other arguments CAN be added (e.g. `api_key`) if necessary.
+
+        Args:
+            helper (OpenCTIConnectorHelper): The helper of the connector. Used for logs.
+
+        =========REMOVED HERE=================
+
+        """
+        self.helper = helper
+
+        # REMOVED HERE
+
+    def _request_data(self, api_url: str, params=None):
+        """
+        Internal method to handle API requests
+        :return: Response in JSON format
+        """
+        try:
+            response = self.session.get(api_url, params=params)
+
+            self.helper.connector_logger.info(
+                "[API] HTTP Get Request to endpoint", {"url_path": api_url}
+            )
+
+            response.raise_for_status()
+            return response
+
+        except requests.RequestException as err:
+            error_msg = "[API] Error while fetching data: "
+            self.helper.connector_logger.error(
+                error_msg, {"url_path": {api_url}, "error": {str(err)}}
+            )
+            return None
+
+    def get_entities(self, params=None) -> dict:
+        """
+        If params is None, retrieve all CVEs in National Vulnerability Database
+        :param params: Optional Params to filter what list to return
+        :return: A list of dicts of the complete collection of CVE from NVD
+        """
+        try:
+            # ===========================
+            # === Add your code below ===
+            # ===========================
+
+            # response = self._request_data() # REMOVED HERE
+
+            # return response.json()
+            # ===========================
+            # === Add your code above ===
+            # ===========================
+
+            raise NotImplementedError
+
+        except Exception as err:
+            self.helper.connector_logger.error(err)
+
+```
+
+</details>
+
+<details>
+<summary> DETAILS ON `connector.py` </summary>
+
+```python
+import sys
+from datetime import datetime, timezone
+
+from connector.converter_to_stix import ConverterToStix
+from connector.settings import ConnectorSettings
+from pycti import OpenCTIConnectorHelper
+from workshop_feed_connector_client import WorkshopFeedConnectorClient
+
+
+class WorkshopFeedConnectorConnector:
+    """
+    ...
+    """
+
+    def __init__(self, config: ConnectorSettings, helper: OpenCTIConnectorHelper):
+        """
+        ...
+        """
+        self.config = config
+        self.helper = helper
+
+        self.client = WorkshopFeedConnectorClient(
+            self.helper,
+            # REMOVED HERE =======================================
+            # Pass any arguments necessary to the client
+        )
+        self.converter_to_stix = ConverterToStix(
+            self.helper,
+            tlp_level=self.config.workshop_feed_connector.tlp_level,
+            # Pass any arguments necessary to the converter
+        )
+
+    [...]
+```
+
+</details>
+</br>
+
+- Run the connector, you shouldn't see validation errors in the logs. The connector should register in the platform.
+
+> [!NOTE]
+> You will still get an error on the logs because the `get_entities` method is not implemented yet. You will implement it in the next step.
+
+- Let's add a new attribute in the settings. For example, add a new attribute `sample_file_path` in the `WorkshopFeedConnectorConfig` class. Add it in the `config.yml` file and in the `docker-compose.yml` file.
+
+In config.yml:
+
+```yaml
+workshop_feed_connector:
+  sample_file_path: '../samples' # Add it here
+  tlp_level: 'clear' # available values: 'clear', 'white', 'green', 'amber', 'amber+strict', 'red' (default: 'clear')
+```
+
+In settings.py:
+
+```python
+class WorkshopFeedConnectorConfig(BaseConfigModel):
+    """
+    Define parameters and/or defaults for the configuration specific to the `WorkshopFeedConnectorConnector`.
+    """
+    sample_file_path: str = Field(description="File path to samples.")
+    tlp_level: Literal[
+        "clear",
+        "white",
+        "green",
+        "amber",
+        "amber+strict",
+        "red",
+    ] = Field(
+        description="Default TLP level of the imported entities.",
+        default="clear",
+    )
+```
+
+In docker-compose.yml:
+
+```yaml
+      - WORKSHOP_CONNECTOR_SAMPLE_FILE_PATH=../samples # Add it here
+```
+
+- Add the same breakpoint in the `main.py` file and run the connector. You should see the new attribute in the settings object.
+
+![Connector settings with new attribute](../docs/media/connector-settings.png)
+
+### Step 9: Implement the "client" to fetch data from the source
+
+- We will use our brand new settings attribute `sample_file_path` to read the samples from the `samples` folder.
+
+- Add in `__init__` of `WorkshopFeedConnectorClient` class the following code:
+
+```python
+    def __init__(self, helper: OpenCTIConnectorHelper, sample_file_path: str):
+        """
+        ...
+        """
+        self.helper = helper
+
+        self.sample_file_path = sample_file_path
+        self.domain_path = "/domains_sample.json"
+        self.ip_addresses_path = "/ip_addresses_sample.json"
+        self.vulnerabilities_path = "/vulnerabilities_sample.json"
+```
+
+- Let's basically implement a method to read the samples from the `samples` folder. Add the following code in the `WorkshopFeedConnectorClient` class:
+
+```python
+    def _from_json(self, sample_file_path: str) -> dict:
+        with open(sample_file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+```
+
+- Update `_request_data` method and add for each entity type their own method
+  
+```python
+    def _from_json(self, sample_file_path: str) -> dict:
+        with open(sample_file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def _request_data(self, sample_file_path: str):
+        """
+        Internal method to handle API requests
+        :return: Response in JSON format
+        """
+        try:
+            response = self._from_json(sample_file_path)
+            return response
+
+        except requests.RequestException as err:
+            error_msg = "[API] Error while fetching data: "
+            self.helper.connector_logger.error(
+                error_msg, {"url_path": {sample_file_path}, "error": {str(err)}}
+            )
+            return None
+
+    def get_domain_entities(self) -> dict:
+        """
+        If params is None, retrieve all CVEs in National Vulnerability Database
+        :param params: Optional Params to filter what list to return
+        :return: A list of dicts of the complete collection of CVE from NVD
+        """
+        try:
+            # ===========================
+            # === Add your code below ===
+            # ===========================
+
+            response = self._request_data(self.sample_file_path + self.domain_path)
+
+            return response
+            # ===========================
+            # === Add your code above ===
+            # ===========================
+
+            # raise NotImplementedError
+
+        except Exception as err:
+            self.helper.connector_logger.error(err)
+
+    def get_ip_entities(self) -> dict:
+        """
+        If params is None, retrieve all CVEs in National Vulnerability Database
+        :param params: Optional Params to filter what list to return
+        :return: A list of dicts of the complete collection of CVE from NVD
+        """
+        try:
+            # ===========================
+            # === Add your code below ===
+            # ===========================
+
+            response = self._request_data(
+                self.sample_file_path + self.ip_addresses_path
+            )
+
+            return response
+            # ===========================
+            # === Add your code above ===
+            # ===========================
+
+            # raise NotImplementedError
+
+        except Exception as err:
+            self.helper.connector_logger.error(err)
+
+    def get_vulnerability_entities(self) -> dict:
+        """
+        If params is None, retrieve all CVEs in National Vulnerability Database
+        :param params: Optional Params to filter what list to return
+        :return: A list of dicts of the complete collection of CVE from NVD
+        """
+        try:
+            # ===========================
+            # === Add your code below ===
+            # ===========================
+
+            response = self._request_data(
+                self.sample_file_path + self.vulnerabilities_path
+            )
+
+            return response
+            # ===========================
+            # === Add your code above ===
+            # ===========================
+
+            # raise NotImplementedError
+
+        except Exception as err:
+            self.helper.connector_logger.error(err)
+```
+
+<details>
+<summary> COMPLETE `api_client.py` CODE DETAILS </summary>
+
+```python
+import json
+
+import requests
+from pycti import OpenCTIConnectorHelper
+
+
+class WorkshopConnectorClient:
+    def __init__(self, helper: OpenCTIConnectorHelper, sample_file_path: str):
+        """
+        Initialize the client with necessary configuration.
+        For log purpose, the connector's helper CAN be injected.
+        Other arguments CAN be added (e.g. `api_key`) if necessary.
+
+        Args:
+            helper (OpenCTIConnectorHelper): The helper of the connector. Used for logs.
+        """
+        self.helper = helper
+
+        self.sample_file_path = sample_file_path
+        self.domain_path = "/domains_sample.json"
+        self.ip_addresses_path = "/ip_addresses_sample.json"
+        self.vulnerabilities_path = "/vulnerabilities_sample.json"
+
+    def _from_json(self, sample_file_path: str) -> dict:
+        with open(sample_file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def _request_data(self, sample_file_path: str):
+        """
+        Internal method to handle API requests
+        :return: Response in JSON format
+        """
+        try:
+            response = self._from_json(sample_file_path)
+            return response
+
+        except requests.RequestException as err:
+            error_msg = "[API] Error while fetching data: "
+            self.helper.connector_logger.error(
+                error_msg, {"url_path": {sample_file_path}, "error": {str(err)}}
+            )
+            return None
+
+    def get_domain_entities(self) -> dict:
+        """
+        If params is None, retrieve all CVEs in National Vulnerability Database
+        :param params: Optional Params to filter what list to return
+        :return: A list of dicts of the complete collection of CVE from NVD
+        """
+        try:
+            # ===========================
+            # === Add your code below ===
+            # ===========================
+
+            response = self._request_data(self.sample_file_path + self.domain_path)
+
+            return response
+            # ===========================
+            # === Add your code above ===
+            # ===========================
+
+            # raise NotImplementedError
+
+        except Exception as err:
+            self.helper.connector_logger.error(err)
+
+    def get_ip_entities(self) -> dict:
+        """
+        If params is None, retrieve all CVEs in National Vulnerability Database
+        :param params: Optional Params to filter what list to return
+        :return: A list of dicts of the complete collection of CVE from NVD
+        """
+        try:
+            # ===========================
+            # === Add your code below ===
+            # ===========================
+
+            response = self._request_data(
+                self.sample_file_path + self.ip_addresses_path
+            )
+
+            return response
+            # ===========================
+            # === Add your code above ===
+            # ===========================
+
+            # raise NotImplementedError
+
+        except Exception as err:
+            self.helper.connector_logger.error(err)
+
+    def get_vulnerability_entities(self) -> dict:
+        """
+        If params is None, retrieve all CVEs in National Vulnerability Database
+        :param params: Optional Params to filter what list to return
+        :return: A list of dicts of the complete collection of CVE from NVD
+        """
+        try:
+            # ===========================
+            # === Add your code below ===
+            # ===========================
+
+            response = self._request_data(
+                self.sample_file_path + self.vulnerabilities_path
+            )
+
+            return response
+            # ===========================
+            # === Add your code above ===
+            # ===========================
+
+            # raise NotImplementedError
+
+        except Exception as err:
+            self.helper.connector_logger.error(err)
+
+```
+
+</details>
+</br>
+
+- Remove unnecessary imports
+- As `WorkshopFeedConnectorClient` is instantiated in the `WorkshopFeedConnectorConnector` class, you need to pass the `sample_file_path` attribute from the settings to the client. Update the `__init__` method of the `WorkshopFeedConnectorConnector` class in `connector.py`:
+
+```python
+    def __init__(self, config: ConnectorSettings, helper: OpenCTIConnectorHelper):
+        """
+        ...
+        """
+        self.config = config
+        self.helper = helper
+
+        self.client = WorkshopFeedConnectorClient(
+            self.helper,
+            self.config.workshop_feed_connector.sample_file_path,
+            # Pass any arguments necessary to the client
+        )
+```
+
+### Step 10: Collect intelligence at regular intervals
+
+Before implementing the intelligence collection, let's check the `run` method in the `WorkshopFeedConnectorConnector` class. It is already implemented to run at regular intervals based on the `duration_period` attribute in the settings.
+
+```python
+    def run(self) -> None:
+        self.helper.schedule_process(
+            message_callback=self.process_message,
+            duration_period=self.config.connector.duration_period.total_seconds(),
+        )
+```
+
+This is an essential part of `EXTERNAL_IMPORT` connectors. And let's details a bit about [Auto backpressure, Scheduling and Execution flow](https://github.com/OpenCTI-Platform/connectors/blob/master/docs/02-external-import-specifications.md#auto-backpressure-scheduling-and-execution)
+
+Implementing it helps to avoid overloading the platform with too many messages at once. The helper will automatically manage the scheduling and execution of the connector's processing logic, ensuring that it runs at the specified intervals without overwhelming the system. And for that, the connector can be in an `idle` state or `buffering` mode or let's say `pause` to let workers consume the messages in the queue. 
+
+When the connector is in a buffering state, it will wait until the platform is ready to accept new messages before proceeding with the next batch of data. This ensures that the connector operates efficiently.
+
+
+
+### Step 11: Transform intelligence and convert data to STIX
 
 ### Success criteria
 
