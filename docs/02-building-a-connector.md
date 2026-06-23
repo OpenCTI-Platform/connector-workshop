@@ -206,7 +206,6 @@ You will have a bunch of errors in the logs, but the connector should be registe
 
 Let's check in the UI in `Data > Ingestion > Monitoring`.
 
-
 ### Step 7: Implement the connector settings
 
 - Copy paste the `sample` folder in which you will find samples of API responses to use for testing. You will find Domains, IPs, and Vulnerabilities samples. You can use them to test your connector without calling the API.
@@ -832,6 +831,7 @@ We want this method parse the entities and convert them into STIX objects. For e
         return stix_entities + stix_relationships
 
 ```
+
 </details>
 </br>
 
@@ -1167,6 +1167,7 @@ class ConverterToStix:
         return stix_software
 
 ```
+
 </details>
 </br>
 
@@ -1215,10 +1216,34 @@ Final step, we need to send the STIX bundle to OpenCTI. The `send_stix_bundle` m
 > If you are using your own local OpenCTI instance, you might have an issue with the connector when sending bundle to OpenCTI with a pika error. This is because the connector is trying to push to a queue in RabbitMQ, but the user is not in the same environment as the RabbitMQ user. You can fix this by following the instructions in the README of `octi-labs`.
 >
 > You have to add in your `hosts` system file the following line:
+>
 >```txt
 >127.0.0.1   rabbitmq
 >```
+>
 > For Windows, the file is located in `C:\Windows\System32\drivers\etc\hosts`. For Linux, it is located in `/etc/hosts`.
+>
+> If you are using the SaaS OpenCTI instance, you have to add in your configuration `queue_protocol='api'` just for demo purposes.
+>
+
+If you are using **API mode**, it can _look_ faster because the connector sends **one HTTP request** and returns quickly. But the platform still needs to do the same work (split + process), so **end-to-end ingestion is usually not faster**, and it can even be slower under load.  
+  
+**What you gain**  
+
+- Easier deployment: only OpenCTI API URL + token
+- Works when RabbitMQ is not reachable (network, security, proxy constraints)
+
+**What you lose (main trade-offs)**  
+
+- **No retry / no delivery guarantee**: if the GraphQL call fails, data can be lost (AMQP retries and uses persistent messages)
+- **No expectations / weaker progress tracking**: UI completion % is not reliable, the bundle is sent as a single unsplit payload
+- **Timeout risk on large bundles**: one big payload through GraphQL can hit HTTP or gateway timeouts, the platform itself handles splitting/processing server-side
+- **More platform-side bottleneck risk**: splitting and processing happens server-side, potentially synchronously
+
+**Recommendation**  
+
+- Use **AMQP** for production and high-volume connectors.
+- Use **API** mainly for PoCs, dev/test, very small payloads, or when RabbitMQ cannot be exposed.
 
 ### Step 14: Final step - Data in OpenCTI
 
