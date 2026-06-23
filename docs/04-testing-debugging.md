@@ -24,11 +24,9 @@ pytest -vv
 
 You should see all FAILED tests as ValidationError, which is expected because we removed `api_base_url` and `api_key`.
 
-Once it works directly, run it as a container the way it ships:
+## Mini lab: Fix the settings tests to pass
 
-```bash
-docker compose up --build
-```
+- It should be done before this module but for the workshop, we will fix it together. The tests files are in `tests/tests_connector/test_settings.py` and `tests/test_main.py`.
 
 ## Inspecting RabbitMQ
 
@@ -37,16 +35,6 @@ RabbitMQ is where you confirm your connector is actually handing off data. If yo
 - Open the RabbitMQ management UI (typically on port 15672).
 - Look at queue depth: a growing queue means workers aren't keeping up or are failing.
 - A queue that never drains points at a worker problem, not a connector problem.
-
-## Worker logs
-
-When a bundle is sent but entities don't appear, the workers tell you why:
-
-```bash
-docker compose logs -f worker
-```
-
-Look for ingestion errors. The most common is `MISSING_REFERENCE_ERROR`, the bundle references an object that isn't present and isn't already known to the platform. Revisit your bundle: are markings and the author identity included or already created? Does the connector have rights to create the foundational objects?
 
 ## Where to look, by symptom
 
@@ -68,6 +56,31 @@ Look for ingestion errors. The most common is `MISSING_REFERENCE_ERROR`, the bun
 - **Hardcoded sleeps as synchronization.** Don't sleep-and-hope that ingestion finished. The pipeline is async by design; track work status instead.
 - **Swallowed exceptions.** A bare `except` that logs nothing turns a five-minute fix into an afternoon. Log with context.
 - **Secrets in logs.** Double-check that error output doesn't echo your token.
+
+## Concrete debugging examples
+
+### Test 1: Invalid CVSS vector
+
+- Remove entities created by your connector from the platform (Observables and Vulnerabilities).
+- Change for vulnerabilities sample the CVSS 4 vector string to be invalid, e.g. `CVSS:4.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H` → `AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:X`
+- Let's change a bit of the base code to remove relationship creation
+- Run the connector and observe the error in the UI. The error message should indicate that the CVSS vector is invalid.
+
+![Work Error](../docs/media/work-error-1.png)
+![Functional Error](../docs/media/functional-error.png)
+
+What's happenning here is that the connector is trying to create a Vulnerability with an invalid CVSS vector, which causes the platform to reject the bundle. The error message in the UI indicates that the CVSS vector is invalid, which helps you identify and fix the issue in your connector code.
+
+### Test 2: Missing reference error
+
+- Now, let's remove again the entities created by your connector from the platform (Observables and Vulnerabilities).
+- Re-add the relationship creation code in your connector.
+- Run the connector and observe the error in the UI. The error message should indicate that there is a missing reference error.
+
+![Work Error](../docs/media/work-error-2.png)
+![Missing Reference Error](../docs/media/missing-reference-error.png)
+
+What's happenning here is that the connector is trying to create a relationship between two entities, but one of the entities is missing from the bundle. The error message in the UI indicates that there is a missing reference error, which helps you identify and fix the issue in your connector code.
 
 ---
 

@@ -36,11 +36,12 @@ A connector README should let an operator deploy it without reading the code. In
 - **Configuration table:** every parameter, its environment variable, whether it's required, and the default.
 - **Deployment** instructions (Docker Compose snippet).
 - **Behavior notes:** what it imports/enriches, scheduling, and any rate limits.
+- Known **limitations** or caveats (e.g. "does not support STIX 2.1", "requires a paid account").
 
 ## Key takeaways recap
 
 - A connector produces well-formed STIX and hands it to the queue; it does not write to the DB or wait on ingestion.
-- Pick the right type: EXTERNAL_IMPORT pulls on a schedule, INTERNAL_ENRICHMENT reacts to entities.
+- Pick the right type: EXTERNAL_IMPORT pulls on a schedule, INTERNAL_ENRICHMENT reacts to entities or any of the types we have seen together in the previous modules.
 - Use the helper for config, logging, work, state, and sending bundles.
 - Deterministic STIX IDs give you deduplication for free; state keeps you incremental.
 - Format, lint, handle errors specifically, and never commit secrets.

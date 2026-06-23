@@ -187,7 +187,7 @@ So, when you create connector and need to connector to external sources, the int
 
 ## State management and idempotency
 
-Covered in Module 2, reinforced here: a well-behaved connector can be stopped and restarted without re-importing everything or losing its place. Persist your cursor/timestamp in state, and make your runs idempotent by relying on deterministic STIX IDs.
+Covered in Module 2, reinforced here: a well-behaved connector can be stopped and restarted without re-importing everything or losing its place. You need to persist state between runs, and use it to drive incremental imports. The `self.helper.get_state()` and `self.helper.set_state()` methods let you store arbitrary JSON-serializable data in the platform, keyed by your connector ID.
 
 Connectors can persist state between runs to track progress.
 
