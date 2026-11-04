@@ -16,6 +16,19 @@ docker compose up -d
 docker 
 ```
 
+The `minio` service runs [RustFS](https://rustfs.com), an open source S3-compatible object storage, under its former service name and `MINIO_ROOT_*` variables. It keeps its files in the `rustfsdata` volume.
+
+### Upgrading a lab that ran Silo
+
+If `docker volume ls` shows `xtm_s3data` (`<COMPOSE_PROJECT_NAME>_s3data`) from a previous lab, reset the lab before using it: the storage starts empty while OpenCTI and XTM One keep their data. This erases all lab data (OpenCTI, XTM One, RabbitMQ, keys):
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+`down -v` does not remove the former `xtm_s3data` volume. Remove it with `docker volume rm xtm_s3data`, unless an OpenCTI stack from [OpenCTI-Platform/docker](https://github.com/OpenCTI-Platform/docker) runs under the same project name: that stack keeps its storage in this volume.
+
 ## Check the platform is healthy
 
 Check connection to the platform with the provided Python script:

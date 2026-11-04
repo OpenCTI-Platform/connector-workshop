@@ -70,21 +70,24 @@ services:
       timeout: 5s
       retries: 5
   minio:
-    image: pgsty/silo:latest
+    image: rustfs/rustfs:1.0.4
     volumes:
-      - s3data:/data
+      # New volume: RustFS runs as uid 10001 and cannot start on the s3data volume written by Silo (root)
+      - rustfsdata:/data
     ports:
       - "9000:9000"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}    
-    command: server /data
+      RUSTFS_ACCESS_KEY: ${MINIO_ROOT_USER}
+      RUSTFS_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      RUSTFS_OBS_LOG_DIRECTORY: "" # logs to stdout (docker logs) instead of files inside the container
+      RUSTFS_CHECK_UPDATE: "false" # no call to version.rustfs.com at each start
     restart: always
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   rabbitmq:
     image: rabbitmq:4.3-management
     environment:
@@ -417,7 +420,7 @@ services:
 
 volumes:
   esdata:
-  s3data:
+  rustfsdata:
   redisdata:
   amqpdata:
   rsakeys:
